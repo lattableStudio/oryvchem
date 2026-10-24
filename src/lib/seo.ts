@@ -23,9 +23,11 @@ export function pageMetadata(opts: {
   /** Only a self-canonical (for pages that exist in a single language, e.g. articles). */
   selfOnly?: boolean;
   type?: "website" | "article";
+  /** Absolute image URL for social sharing; defaults to the generated /og card. */
+  image?: string;
 }): Metadata {
-  const { locale, path = "", title, description, keywords, selfOnly, type = "website" } = opts;
-  const ogImage = { url: `${SITE.url}/og`, width: 1200, height: 630, alt: "Oryvchem — industrial chemical sourcing, Foshan, China" };
+  const { locale, path = "", title, description, keywords, selfOnly, type = "website", image } = opts;
+  const ogImage = { url: image ?? `${SITE.url}/og`, ...(image ? {} : { width: 1200, height: 630 }), alt: "Oryvchem — industrial chemical sourcing, Foshan, China" };
   return {
     title,
     description,

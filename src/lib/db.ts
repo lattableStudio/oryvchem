@@ -46,6 +46,57 @@ create table if not exists posts (
   updated_at timestamptz not null default now(),
   unique (locale, slug)
 );
+create table if not exists content_lists (
+  locale text not null,
+  key text not null,
+  items jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (locale, key)
+);
+create table if not exists settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+create table if not exists pages (
+  id bigserial primary key,
+  locale text not null,
+  slug text not null,
+  title text not null,
+  body text not null default '',
+  seo_title text not null default '',
+  seo_description text not null default '',
+  cover_media bigint,
+  published boolean not null default false,
+  show_in_nav boolean not null default false,
+  show_in_footer boolean not null default false,
+  position int not null default 0,
+  updated_at timestamptz not null default now(),
+  unique (locale, slug)
+);
+create table if not exists media (
+  id bigserial primary key,
+  filename text not null,
+  mime text not null,
+  size int not null,
+  alt text not null default '',
+  data bytea not null,
+  created_at timestamptz not null default now()
+);
+alter table posts add column if not exists cover_media bigint;
+create table if not exists rate_limits (
+  key text not null,
+  at timestamptz not null default now()
+);
+create index if not exists rate_limits_key_at on rate_limits (key, at desc);
+create table if not exists categories (
+  slug text primary key,
+  code text not null default '',
+  position int not null default 0,
+  hidden boolean not null default false,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
 `;
 
 /** Returns a connected client (tables are created on first use), or null when DATABASE_URL is unset. */

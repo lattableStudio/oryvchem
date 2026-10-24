@@ -1,8 +1,6 @@
-import { SITE } from "@/lib/site";
-
-export function WhatsAppButton({ label }: { label: string }) {
+export function WhatsAppButton({ label, href }: { label: string; href: string }) {
   return (
-    <a className="wa-float" href={SITE.whatsapp} target="_blank" rel="noopener noreferrer" aria-label={label}>
+    <a className="wa-float" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
       <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true" fill="currentColor">
         <path d="M16 3a13 13 0 0 0-11.200 19.600L3 29l6.600-1.700A13 13 0 1 0 16 3Zm0 2.400a10.600 10.600 0 1 1-5.400 19.700l-.4-.2-3.900 1 1-3.800-.3-.4A10.600 10.600 0 0 1 16 5.400Zm-4.200 5.300c-.3 0-.7.100-1 .5-.4.400-1.300 1.300-1.300 3.100s1.300 3.600 1.500 3.800c.2.300 2.600 4.100 6.400 5.600 3.100 1.200 3.700.9 4.400.9.700-.1 2.100-.9 2.400-1.800.3-.9.300-1.600.2-1.800-.1-.2-.4-.3-.8-.5l-2.500-1.200c-.3-.1-.6-.2-.8.200l-1.100 1.400c-.2.200-.4.300-.7.100-.4-.2-1.500-.6-2.800-1.700a10.300 10.300 0 0 1-1.900-2.400c-.2-.4 0-.5.200-.7l.600-.7c.200-.2.200-.4.400-.600.100-.3.100-.5 0-.7l-1.100-2.700c-.3-.7-.6-.6-.8-.6Z" />
       </svg>

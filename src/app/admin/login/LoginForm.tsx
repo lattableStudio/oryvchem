@@ -9,7 +9,7 @@ export function LoginForm() {
     <form action={action} className="card">
       <label htmlFor="password">Password</label>
       <input id="password" name="password" type="password" autoComplete="current-password" required autoFocus />
-      {state.error && <p style={{ color: "var(--red)" }}>{state.error}</p>}
+      {state.error && <p role="alert" style={{ color: "var(--red)" }}>{state.error}</p>}
       <p><button className="btn" disabled={pending}>{pending ? "…" : "Log in"}</button></p>
     </form>
   );

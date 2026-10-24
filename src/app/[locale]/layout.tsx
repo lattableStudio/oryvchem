@@ -3,11 +3,15 @@ import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } fro
 import { notFound } from "next/navigation";
 import { locales, localeMeta, isLocale } from "@/i18n/config";
 import { getDict } from "@/lib/content";
+import { getCategories } from "@/lib/categories";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { listPageLinks } from "@/lib/pages";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { Enhance } from "@/components/Enhance";
 import { JsonLd } from "@/lib/jsonld";
 import { organizationSchema } from "@/lib/schema";
+import { bannerFor, getBanner, getSite } from "@/lib/settings";
 import { SITE } from "@/lib/site";
 import "../globals.css";
 
@@ -50,17 +54,25 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const d = await getDict(locale);
+  const [d, cats, site, bannerRaw, pageLinks] = await Promise.all([getDict(locale), getCategories(locale), getSite(), getBanner(), listPageLinks(locale)]);
+  const banner = bannerFor(bannerRaw, locale);
   const { dir } = localeMeta[locale];
 
   return (
     <html lang={locale} dir={dir} className={`${head.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}>
       <body>
-        <JsonLd data={organizationSchema(locale, d)} />
-        <Header locale={locale} t={d.nav} />
+        <JsonLd data={organizationSchema(locale, d, cats, site)} />
+        {banner && (
+          <div className="banner" role="note">
+            {banner.text}
+            {banner.link && <a href={banner.link} {...(banner.link.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>→</a>}
+          </div>
+        )}
+        <Header locale={locale} t={d.nav} phone={site.phone} phoneHref={site.phoneHref} pages={pageLinks.filter((p) => p.show_in_nav)} />
         <main id="main">{children}</main>
-        <Footer locale={locale} d={d} />
-        <WhatsAppButton label={d.contactInfo.whatsapp} />
+        <Footer locale={locale} d={d} cats={cats} site={site} />
+        <WhatsAppButton label={d.contactInfo.whatsapp} href={site.whatsapp} />
+        <Enhance />
       </body>
     </html>
   );

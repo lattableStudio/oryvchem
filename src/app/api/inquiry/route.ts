@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { SITE } from "@/lib/site";
 import { saveLead, markEmailSent } from "@/lib/leads";
+import { clientIp, hits, record } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -21,22 +22,13 @@ type Payload = {
   website?: string; // honeypot
 };
 
-// Small in-memory limiter (per server instance): 5 submissions / 10 min / IP.
-const hits = new Map<string, number[]>();
-function limited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < 10 * 60_000);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > 5;
-}
-
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\0/g, "").trim().slice(0, max) : "");
 const oneLine = (s: string) => s.replace(/[\r\n]+/g, " ");
 
 export async function POST(req: Request) {
+  if (Number(req.headers.get("content-length") ?? 0) > 30_000) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });
   let body: Payload;
   try {
     body = await req.json();
@@ -47,8 +39,9 @@ export async function POST(req: Request) {
   // Bots fill the hidden field; pretend success.
   if (body.website) return NextResponse.json({ ok: true });
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (limited(ip)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  const key = `inquiry:${clientIp(req.headers)}`;
+  if ((await hits(key, 10 * 60)) >= 5) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  await record(key);
 
   const type = body.type === "callback" ? "callback" : "quote";
   const d = {

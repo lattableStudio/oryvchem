@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Locale } from "@/i18n/config";
 import { getStaticDict, type Dict } from "@/i18n/dictionaries";
 import { db } from "./db";
+import { applyLists, loadLists } from "./lists";
 
 export const CONTENT_TAG = "content";
 
@@ -42,12 +43,14 @@ async function loadOverrides(locale: Locale): Promise<Row[]> {
   }
 }
 
+const cachedLists = unstable_cache(loadLists, ["content-lists"], { tags: [CONTENT_TAG], revalidate: 300 });
 const cachedOverrides = unstable_cache(loadOverrides, ["content-overrides"], { tags: [CONTENT_TAG], revalidate: 300 });
 
 /** Dictionary with admin edits applied. Falls back to built-in copy if the DB is absent or down. */
 export async function getDict(locale: Locale): Promise<Dict> {
   if (!process.env.DATABASE_URL) return getStaticDict(locale);
-  return applyOverrides(getStaticDict(locale), await cachedOverrides(locale));
+  const withText = applyOverrides(getStaticDict(locale), await cachedOverrides(locale));
+  return applyLists(withText, await cachedLists(locale));
 }
 
 /** Uncached current overrides, for the admin editor. */

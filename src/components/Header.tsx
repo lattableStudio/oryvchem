@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { locales, localeMeta, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n/dictionaries";
-import { SITE } from "@/lib/site";
 
-export function Header({ locale, t }: { locale: Locale; t: Dict["nav"] }) {
+export function Header({ locale, t, phone, phoneHref, pages = [] }: { locale: Locale; t: Dict["nav"]; phone: string; phoneHref: string; pages?: { slug: string; title: string }[] }) {
   const pathname = usePathname() || `/${locale}`;
   const rest = pathname.replace(/^\/(en|ar|fr)/, "");
   const home = `/${locale}`;
@@ -18,6 +17,7 @@ export function Header({ locale, t }: { locale: Locale; t: Dict["nav"] }) {
     [`${home}#compliance`, t.compliance],
     [`${home}/insights`, t.insights],
     [`${home}#faq`, t.faq],
+    ...pages.map((p): [string, string] => [`${home}/${encodeURIComponent(p.slug)}`, p.title]),
   ];
 
   return (
@@ -48,7 +48,7 @@ export function Header({ locale, t }: { locale: Locale; t: Dict["nav"] }) {
               </Link>
             ))}
           </div>
-          <a className="nav-phone" href={SITE.phoneHref} dir="ltr">☎ {SITE.phone}</a>
+          <a className="nav-phone" href={phoneHref} dir="ltr">☎ {phone}</a>
           <Link className="nav-cta" href={`${home}#contact`}>{t.quote}</Link>
           <details className="burger">
             <summary aria-label={t.menu}><span /><span /><span /></summary>
@@ -57,7 +57,7 @@ export function Header({ locale, t }: { locale: Locale; t: Dict["nav"] }) {
                 <Link key={href} href={href}>{label}</Link>
               ))}
               <Link href={`${home}#contact`}>{t.contact}</Link>
-              <a href={SITE.phoneHref} dir="ltr">☎ {SITE.phone}</a>
+              <a href={phoneHref} dir="ltr">☎ {phone}</a>
             </div>
           </details>
         </div>

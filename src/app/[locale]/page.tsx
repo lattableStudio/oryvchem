@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getDict } from "@/lib/content";
-import { categoryCodes, categorySlugs, SITE } from "@/lib/site";
+import { getCategories } from "@/lib/categories";
+import { getSite } from "@/lib/settings";
+import { getHomeLayout, type HomeSectionId } from "@/lib/homeLayout";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/lib/jsonld";
 import { homeSchema } from "@/lib/schema";
@@ -21,14 +24,200 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const d = await getDict(locale);
+  const [d, cats, site, layout] = await Promise.all([getDict(locale), getCategories(locale), getSite(), getHomeLayout()]);
   const ticker = [...d.ticker, ...d.ticker];
+  const faqVisible = layout.some((l) => l.id === "faq" && l.visible);
+
+  const sections: Record<HomeSectionId, React.ReactNode> = {
+    answer: (
+    <section className="answer" id="about">
+      <div className="wrap answer-grid">
+        <div>
+          <div className="section-label">{d.answer.label}</div>
+          <h2 className="section-title">{d.answer.title}</h2>
+          <p className="answer-body">{d.answer.body}</p>
+        </div>
+        <dl className="facts">
+          {d.answer.facts.map(([k, v]) => (
+            <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
+          ))}
+        </dl>
+      </div>
+    </section>
+    ),
+    categories: (
+    <section id="categories">
+      <div className="wrap">
+        <div className="section-head">
+          <div className="section-label">{d.categories.label}</div>
+          <h2 className="section-title">{d.categories.title}</h2>
+          <p>{d.categories.intro}</p>
+        </div>
+        <div className="cat-grid">
+          {cats.map((c) => {
+            return (
+              <Link key={c.slug} href={`/${locale}/products/${c.slug}`} className="cat-card">
+                {c.code && <span className="cat-tab">{c.code}</span>}
+                <h3>{c.name}</h3>
+                <p>{c.short}</p>
+                <div className="cat-examples">{c.examples.join(" · ")}</div>
+                <span className="more">{d.categories.more} <b aria-hidden="true">→</b></span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+    ),
+    capability: (
+    <section id="capability" className="alt">
+      <div className="wrap">
+        <div className="section-head">
+          <div className="section-label">{d.capability.label}</div>
+          <h2 className="section-title">{d.capability.title}</h2>
+          <p>{d.capability.intro}</p>
+        </div>
+        <div className="cat-grid">
+          {d.capability.items.map((it, i) => (
+            <div className="cat-card" key={it.t}>
+              <span className="cat-tab">{String(i + 1).padStart(2, "0")}</span>
+              <h3>{it.t}</h3>
+              <p>{it.d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+    ),
+    process: (
+    <section id="process" className="process">
+      <div className="wrap">
+        <div className="section-head">
+          <div className="section-label">{d.process.label}</div>
+          <h2 className="section-title">{d.process.title}</h2>
+        </div>
+        <ol className="steps">
+          {d.process.steps.map((s, i) => (
+            <li className="step" key={s.t}>
+              <div className="num">{String(i + 1).padStart(2, "0")}</div>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+    ),
+    markets: (
+    <section id="markets">
+      <div className="wrap">
+        <div className="section-head">
+          <div className="section-label">{d.markets.label}</div>
+          <h2 className="section-title">{d.markets.title}</h2>
+          <p>{d.markets.intro}</p>
+        </div>
+        <div className="markets">
+          {d.markets.regions.map((r) => (
+            <div className="market" key={r.name}>
+              <h3>{r.name}</h3>
+              <p>{r.countries}</p>
+            </div>
+          ))}
+        </div>
+        <p className="muted small">{d.markets.note}</p>
+      </div>
+    </section>
+    ),
+    cta: (
+    <section className="cta-band">
+      <div className="wrap cta-grid">
+        <div>
+          <h2 className="section-title">{d.cta.title}</h2>
+          <p>{d.cta.text}</p>
+        </div>
+        <InquiryForm t={d.form} locale={locale} variant="callback" idPrefix="cb" />
+      </div>
+    </section>
+    ),
+    compliance: (
+    <section id="compliance">
+      <div className="wrap compliance-grid">
+        <div>
+          <div className="section-label">{d.compliance.label}</div>
+          <h2 className="section-title">{d.compliance.title}</h2>
+          <p className="muted">{d.compliance.intro}</p>
+          <div className="compliance-note">
+            <div className="label">{d.compliance.noteLabel}</div>
+            {d.compliance.note}
+          </div>
+        </div>
+        <ul className="compliance-list">
+          {d.compliance.items.map((it) => (
+            <li key={it.t}>
+              <span className="icon" />
+              <div><strong>{it.t}</strong><span>{it.d}</span></div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+    ),
+    faq: (
+    <section id="faq" className="alt">
+      <div className="wrap faq-wrap">
+        <div className="section-head">
+          <div className="section-label">{d.faq.label}</div>
+          <h2 className="section-title">{d.faq.title}</h2>
+        </div>
+        <div className="faq">
+          {d.faq.items.map((f) => (
+            <details key={f.q}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+    ),
+    contact: (
+    <section id="contact">
+      <div className="wrap contact-grid">
+        <div>
+          <div className="section-label">{d.nav.contact.toUpperCase()}</div>
+          <h2 className="section-title">{d.form.title}</h2>
+          <p className="muted">{d.form.intro}</p>
+          <InquiryForm t={d.form} locale={locale} idPrefix="q" />
+        </div>
+        <div className="contact-info">
+          <dl>
+            <dt>{d.contactInfo.office}</dt>
+            <dd>{d.contactInfo.officeV}</dd>
+            <dt>{d.contactInfo.phone}</dt>
+            <dd><a href={site.phoneHref} dir="ltr">{site.phone}</a></dd>
+            <dt>{d.contactInfo.email}</dt>
+            <dd><a href={`mailto:${site.email}`}>{site.email}</a></dd>
+            <dt>{d.contactInfo.response}</dt>
+            <dd>{d.contactInfo.responseV}</dd>
+            <dt>{d.contactInfo.scope}</dt>
+            <dd>{d.contactInfo.scopeV}</dd>
+            <dt>{d.contactInfo.what}</dt>
+            <dd>{d.contactInfo.whatV}</dd>
+          </dl>
+          <a className="btn-wa" href={site.whatsapp} target="_blank" rel="noopener noreferrer">{d.contactInfo.whatsapp}</a>
+        </div>
+      </div>
+    </section>
+    ),
+  };
 
   return (
     <>
-      {homeSchema(locale, d).map((s, i) => (
-        <JsonLd key={i} data={s} />
-      ))}
+      {homeSchema(locale, d, cats)
+        .filter((s) => faqVisible || (s as { "@type"?: string })["@type"] !== "FAQPage")
+        .map((s, i) => (
+          <JsonLd key={i} data={s} />
+        ))}
 
       {/* HERO */}
       <section className="hero">
@@ -56,7 +245,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <div className="hero-ctas">
               <a className="btn-primary" href="#contact">{d.hero.ctaQuote}</a>
               <a className="btn-ghost" href="#categories">{d.hero.ctaProducts}</a>
-              <a className="btn-ghost" href={SITE.whatsapp} target="_blank" rel="noopener noreferrer">{d.hero.ctaCall}</a>
+              <a className="btn-ghost" href={site.whatsapp} target="_blank" rel="noopener noreferrer">{d.hero.ctaCall}</a>
             </div>
             <ul className="badges">
               {d.hero.badges.map((b) => (
@@ -85,186 +274,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </div>
 
-      {/* ANSWER-FIRST BLOCK (GEO) */}
-      <section className="answer" id="about">
-        <div className="wrap answer-grid">
-          <div>
-            <div className="section-label">{d.answer.label}</div>
-            <h2 className="section-title">{d.answer.title}</h2>
-            <p className="answer-body">{d.answer.body}</p>
-          </div>
-          <dl className="facts">
-            {d.answer.facts.map(([k, v]) => (
-              <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      {/* CATEGORIES */}
-      <section id="categories">
-        <div className="wrap">
-          <div className="section-head">
-            <div className="section-label">{d.categories.label}</div>
-            <h2 className="section-title">{d.categories.title}</h2>
-            <p>{d.categories.intro}</p>
-          </div>
-          <div className="cat-grid">
-            {categorySlugs.map((s) => {
-              const c = d.categories.items[s];
-              return (
-                <Link key={s} href={`/${locale}/products/${s}`} className="cat-card">
-                  <span className="cat-tab">{categoryCodes[s]}</span>
-                  <h3>{c.name}</h3>
-                  <p>{c.short}</p>
-                  <div className="cat-examples">{c.examples.join(" · ")}</div>
-                  <span className="more">{d.categories.more} <b aria-hidden="true">→</b></span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CAPABILITY */}
-      <section id="capability" className="alt">
-        <div className="wrap">
-          <div className="section-head">
-            <div className="section-label">{d.capability.label}</div>
-            <h2 className="section-title">{d.capability.title}</h2>
-            <p>{d.capability.intro}</p>
-          </div>
-          <div className="cat-grid">
-            {d.capability.items.map((it, i) => (
-              <div className="cat-card" key={it.t}>
-                <span className="cat-tab">{String(i + 1).padStart(2, "0")}</span>
-                <h3>{it.t}</h3>
-                <p>{it.d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PROCESS */}
-      <section id="process" className="process">
-        <div className="wrap">
-          <div className="section-head">
-            <div className="section-label">{d.process.label}</div>
-            <h2 className="section-title">{d.process.title}</h2>
-          </div>
-          <ol className="steps">
-            {d.process.steps.map((s, i) => (
-              <li className="step" key={s.t}>
-                <div className="num">{String(i + 1).padStart(2, "0")}</div>
-                <h3>{s.t}</h3>
-                <p>{s.d}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* MARKETS (GEO) */}
-      <section id="markets">
-        <div className="wrap">
-          <div className="section-head">
-            <div className="section-label">{d.markets.label}</div>
-            <h2 className="section-title">{d.markets.title}</h2>
-            <p>{d.markets.intro}</p>
-          </div>
-          <div className="markets">
-            {d.markets.regions.map((r) => (
-              <div className="market" key={r.name}>
-                <h3>{r.name}</h3>
-                <p>{r.countries}</p>
-              </div>
-            ))}
-          </div>
-          <p className="muted small">{d.markets.note}</p>
-        </div>
-      </section>
-
-      {/* CALLBACK CTA */}
-      <section className="cta-band">
-        <div className="wrap cta-grid">
-          <div>
-            <h2 className="section-title">{d.cta.title}</h2>
-            <p>{d.cta.text}</p>
-          </div>
-          <InquiryForm t={d.form} locale={locale} variant="callback" idPrefix="cb" />
-        </div>
-      </section>
-
-      {/* COMPLIANCE */}
-      <section id="compliance">
-        <div className="wrap compliance-grid">
-          <div>
-            <div className="section-label">{d.compliance.label}</div>
-            <h2 className="section-title">{d.compliance.title}</h2>
-            <p className="muted">{d.compliance.intro}</p>
-            <div className="compliance-note">
-              <div className="label">{d.compliance.noteLabel}</div>
-              {d.compliance.note}
-            </div>
-          </div>
-          <ul className="compliance-list">
-            {d.compliance.items.map((it) => (
-              <li key={it.t}>
-                <span className="icon" />
-                <div><strong>{it.t}</strong><span>{it.d}</span></div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="alt">
-        <div className="wrap faq-wrap">
-          <div className="section-head">
-            <div className="section-label">{d.faq.label}</div>
-            <h2 className="section-title">{d.faq.title}</h2>
-          </div>
-          <div className="faq">
-            {d.faq.items.map((f) => (
-              <details key={f.q}>
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CONTACT */}
-      <section id="contact">
-        <div className="wrap contact-grid">
-          <div>
-            <div className="section-label">{d.nav.contact.toUpperCase()}</div>
-            <h2 className="section-title">{d.form.title}</h2>
-            <p className="muted">{d.form.intro}</p>
-            <InquiryForm t={d.form} locale={locale} idPrefix="q" />
-          </div>
-          <div className="contact-info">
-            <dl>
-              <dt>{d.contactInfo.office}</dt>
-              <dd>{d.contactInfo.officeV}</dd>
-              <dt>{d.contactInfo.phone}</dt>
-              <dd><a href={SITE.phoneHref} dir="ltr">{SITE.phone}</a></dd>
-              <dt>{d.contactInfo.email}</dt>
-              <dd><a href={`mailto:${SITE.email}`}>{SITE.email}</a></dd>
-              <dt>{d.contactInfo.response}</dt>
-              <dd>{d.contactInfo.responseV}</dd>
-              <dt>{d.contactInfo.scope}</dt>
-              <dd>{d.contactInfo.scopeV}</dd>
-              <dt>{d.contactInfo.what}</dt>
-              <dd>{d.contactInfo.whatV}</dd>
-            </dl>
-            <a className="btn-wa" href={SITE.whatsapp} target="_blank" rel="noopener noreferrer">{d.contactInfo.whatsapp}</a>
-          </div>
-        </div>
-      </section>
+      {layout.filter((l) => l.visible).map((l) => (
+        <Fragment key={l.id}>{sections[l.id]}</Fragment>
+      ))}
     </>
   );
 }

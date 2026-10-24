@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/app/admin/ConfirmButton";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -57,7 +58,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
       </form>
       <form action={deleteLead}>
         <input type="hidden" name="id" value={lead.id} />
-        <button className="btn danger">Delete lead</button>
+        <ConfirmButton message="Delete this lead and its notes permanently?" className="btn danger">Delete lead</ConfirmButton>
       </form>
     </>
   );

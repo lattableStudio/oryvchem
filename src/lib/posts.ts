@@ -13,6 +13,8 @@ export type Post = {
   published: boolean;
   published_at: Date | string | null;
   updated_at: Date | string;
+  /** media.id of the cover image (bigint arrives as a string) */
+  cover_media: number | string | null;
 };
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {

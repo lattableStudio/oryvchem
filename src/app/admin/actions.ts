@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { adminEnabled, checkPassword, endSession, requireAdmin, startSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { clientIp, hits, record } from "@/lib/ratelimit";
 import { CONTENT_TAG, flatten } from "@/lib/content";
 import { getStaticDict } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -19,18 +20,20 @@ function flush() {
 }
 
 // ---------- auth ----------
-const attempts = new Map<string, number[]>();
+const LOGIN_MAX = 6;
+const LOGIN_WINDOW = 15 * 60;
 
 export async function login(_: unknown, fd: FormData): Promise<{ error?: string }> {
   if (!adminEnabled()) return { error: "ADMIN_PASSWORD is not set on the server." };
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const recent = (attempts.get(ip) ?? []).filter((t) => Date.now() - t < 10 * 60_000);
-  if (recent.length >= 8) return { error: "Too many attempts. Try again in a few minutes." };
-  recent.push(Date.now());
-  attempts.set(ip, recent);
-  if (!checkPassword(str(fd.get("password"), 200))) return { error: "Wrong password." };
+  const key = `login:${clientIp(await headers())}`;
+  // Only failed attempts count, so a correct login is never blocked by earlier success.
+  if ((await hits(key, LOGIN_WINDOW)) >= LOGIN_MAX) return { error: "Too many failed attempts. Try again in 15 minutes." };
+  if (!checkPassword(str(fd.get("password"), 200))) {
+    await record(key);
+    return { error: "Wrong password." };
+  }
   await startSession();
-  redirect("/admin");
+  redirect("/admin/dashboard");
 }
 
 export async function logout() {
@@ -116,16 +119,17 @@ export async function savePost(fd: FormData) {
   const excerpt = str(fd.get("excerpt"), 400).trim();
   const body = str(fd.get("body"), 100_000);
   const published = fd.get("published") === "on";
+  const cover = Number(fd.get("cover_media")) || null;
   const sql = await db();
   if (!sql || !isLocale(locale) || !title || !slug) redirect(`/admin/posts${id ? `/${id}` : "/new"}?error=1`);
   try {
     if (id) {
-      await sql`update posts set locale = ${locale}, slug = ${slug}, title = ${title}, excerpt = ${excerpt}, body = ${body},
+      await sql`update posts set locale = ${locale}, slug = ${slug}, title = ${title}, excerpt = ${excerpt}, body = ${body}, cover_media = ${cover},
         published = ${published}, updated_at = now(),
         published_at = case when ${published} then coalesce(published_at, now()) else published_at end where id = ${id}`;
     } else {
-      const [row] = await sql<{ id: number }[]>`insert into posts (locale, slug, title, excerpt, body, published, published_at)
-        values (${locale}, ${slug}, ${title}, ${excerpt}, ${body}, ${published}, ${published ? new Date() : null}) returning id`;
+      const [row] = await sql<{ id: number }[]>`insert into posts (locale, slug, title, excerpt, body, cover_media, published, published_at)
+        values (${locale}, ${slug}, ${title}, ${excerpt}, ${body}, ${cover}, ${published}, ${published ? new Date() : null}) returning id`;
       flush();
       redirect(`/admin/posts/${row.id}?saved=1`);
     }

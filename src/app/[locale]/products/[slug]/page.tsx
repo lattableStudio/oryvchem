@@ -3,26 +3,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { locales, isLocale } from "@/i18n/config";
 import { getDict } from "@/lib/content";
-import { categoryCodes, categorySlugs, isCategory, SITE } from "@/lib/site";
+import { getCategories, getCategory, getCategorySlugs } from "@/lib/categories";
+import { SITE } from "@/lib/site";
+import { getSite } from "@/lib/settings";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/lib/jsonld";
 import { productPageSchema } from "@/lib/schema";
 import { InquiryForm } from "@/components/InquiryForm";
 
-export const dynamicParams = false;
 export const revalidate = 300;
 
-export function generateStaticParams() {
-  return locales.flatMap((locale) => categorySlugs.map((slug) => ({ locale, slug })));
+export async function generateStaticParams() {
+  const slugs = await getCategorySlugs();
+  return locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })));
 }
 
 type P = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const { locale, slug } = await params;
-  if (!isLocale(locale) || !isCategory(slug)) return {};
-  const d = await getDict(locale);
-  const c = d.categories.items[slug];
+  if (!isLocale(locale)) return {};
+  const c = await getCategory(locale, slug);
+  if (!c) return {};
   return pageMetadata({
     locale,
     path: `/products/${slug}`,
@@ -34,13 +36,14 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 
 export default async function ProductPage({ params }: P) {
   const { locale, slug } = await params;
-  if (!isLocale(locale) || !isCategory(slug)) notFound();
-  const d = await getDict(locale);
-  const c = d.categories.items[slug];
+  if (!isLocale(locale)) notFound();
+  const [d, cats, site] = await Promise.all([getDict(locale), getCategories(locale), getSite()]);
+  const c = cats.find((x) => x.slug === slug);
+  if (!c) notFound();
 
   return (
     <>
-      {productPageSchema(locale, slug, d).map((s, i) => (
+      {productPageSchema(locale, c, d).map((s, i) => (
         <JsonLd key={i} data={s} />
       ))}
       <section className="page-hero">
@@ -52,12 +55,12 @@ export default async function ProductPage({ params }: P) {
             <span aria-hidden="true">/</span>
             <span aria-current="page">{c.name}</span>
           </nav>
-          <span className="cat-tab">{categoryCodes[slug]}</span>
+          {c.code && <span className="cat-tab">{c.code}</span>}
           <h1 className="headline">{c.name}</h1>
           <p className="lede">{c.intro}</p>
           <div className="hero-ctas">
             <a className="btn-primary" href="#quote">{d.product.quoteFor}</a>
-            <a className="btn-ghost" href={SITE.whatsapp} target="_blank" rel="noopener noreferrer">{d.hero.ctaCall}</a>
+            <a className="btn-ghost" href={site.whatsapp} target="_blank" rel="noopener noreferrer">{d.hero.ctaCall}</a>
           </div>
         </div>
       </section>
@@ -107,10 +110,10 @@ export default async function ProductPage({ params }: P) {
           <div>
             <h2 className="section-title sm">{d.product.related}</h2>
             <ul className="related">
-              {categorySlugs.filter((s) => s !== slug).map((s) => (
-                <li key={s}>
-                  <Link href={`/${locale}/products/${s}`}>
-                    <span className="cat-tab">{categoryCodes[s]}</span> {d.categories.items[s].name}
+              {cats.filter((x) => x.slug !== slug).map((x) => (
+                <li key={x.slug}>
+                  <Link href={`/${locale}/products/${x.slug}`}>
+                    {x.code && <span className="cat-tab">{x.code}</span>} {x.name}
                   </Link>
                 </li>
               ))}

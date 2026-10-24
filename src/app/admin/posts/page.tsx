@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db, dbConfigured } from "@/lib/db";
+import { Pager, PAGE_SIZE, pageNum } from "../Pager";
 import type { Post } from "@/lib/posts";
 
-export default async function Posts() {
+export default async function Posts({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   await requireAdmin();
   if (!dbConfigured()) return <div className="notice"><b>No database yet.</b> Set <code>DATABASE_URL</code> to publish articles.</div>;
+  const page = pageNum((await searchParams).page);
   const sql = (await db())!;
-  const rows = await sql<Post[]>`select * from posts order by updated_at desc`;
+  const rows = await sql<Post[]>`select * from posts order by updated_at desc limit ${PAGE_SIZE} offset ${(page - 1) * PAGE_SIZE}`;
+  const [{ n }] = await sql<{ n: number }[]>`select count(*)::int n from posts`;
   return (
     <>
       <h1>Insights posts</h1>
@@ -26,6 +29,7 @@ export default async function Posts() {
           {rows.length === 0 && <tr><td colSpan={4} className="muted">No posts yet.</td></tr>}
         </tbody>
       </table>
+      <Pager page={page} total={n} href={(p) => `/admin/posts${p > 1 ? `?page=${p}` : ""}`} />
     </>
   );
 }

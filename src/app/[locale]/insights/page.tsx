@@ -46,6 +46,10 @@ export default async function Insights({ params }: P) {
             <div className="cat-grid">
               {posts.map((p) => (
                 <Link key={p.id} href={`/${locale}/insights/${p.slug}`} className="cat-card">
+                  {p.cover_media && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/media/${p.cover_media}`} alt="" loading="lazy" style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 10, marginBottom: 16 }} />
+                  )}
                   <span className="cat-tab">{fmt.format(new Date(p.published_at ?? p.updated_at))}</span>
                   <h2 className="card-title">{p.title}</h2>
                   <p>{p.excerpt}</p>

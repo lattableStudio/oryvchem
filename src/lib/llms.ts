@@ -1,12 +1,15 @@
 import { locales, localeMeta } from "@/i18n/config";
 import { getDict } from "@/lib/content";
 import { listPublished } from "@/lib/posts";
-import { categorySlugs, SITE } from "./site";
+import { listPublishedPages } from "@/lib/pages";
+import { getCategories } from "./categories";
+import { SITE } from "./site";
+import { getSite } from "./settings";
 import { url } from "./seo";
 
 /** /llms.txt — concise map of the site for LLM crawlers (llmstxt.org format). */
 export async function buildLlmsTxt(): Promise<string> {
-  const en = await getDict("en");
+  const [en, site] = await Promise.all([getDict("en"), getSite()]);
   const lines = [
     `# ${SITE.name}`,
     "",
@@ -14,19 +17,20 @@ export async function buildLlmsTxt(): Promise<string> {
     "",
     "## Key facts",
     ...en.answer.facts.map(([k, v]) => `- ${k}: ${v}`),
-    `- Phone / WhatsApp: ${SITE.phone}`,
-    `- Email: ${SITE.email}`,
+    `- Phone / WhatsApp: ${site.phone}`,
+    `- Email: ${site.email}`,
     `- Last updated: ${SITE.updated}`,
     "",
   ];
   for (const l of locales) {
-    const d = await getDict(l);
+    const [d, cats] = await Promise.all([getDict(l), getCategories(l)]);
     lines.push(`## ${localeMeta[l].label} (${localeMeta[l].native})`);
     lines.push(`- [${d.meta.title}](${url(l)}): ${d.meta.description}`);
-    for (const s of categorySlugs) {
-      lines.push(`- [${d.categories.items[s].name}](${url(l, `/products/${s}`)}): ${d.categories.items[s].short}`);
+    for (const c of cats) {
+      lines.push(`- [${c.name}](${url(l, `/products/${c.slug}`)}): ${c.short}`);
     }
     for (const p of await listPublished(l)) lines.push(`- [${p.title}](${url(l, `/insights/${p.slug}`)}): ${p.excerpt}`);
+    for (const p of await listPublishedPages(l)) lines.push(`- [${p.title}](${url(l, `/${p.slug}`)}): ${p.seo_description || p.body.replace(/[#*`>_]|\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim().slice(0, 155)}`);
     lines.push("");
   }
   lines.push("## Full text", `- [llms-full.txt](${SITE.url}/llms-full.txt): all pages, FAQs and articles in plain text`, "");
@@ -37,13 +41,12 @@ export async function buildLlmsTxt(): Promise<string> {
 export async function buildLlmsFull(): Promise<string> {
   const out: string[] = [`# ${SITE.name} — full content`, `Last updated: ${SITE.updated}`, ""];
   for (const l of locales) {
-    const d = await getDict(l);
+    const [d, cats] = await Promise.all([getDict(l), getCategories(l)]);
     out.push(`# ${localeMeta[l].label} — ${url(l)}`, "", `## ${d.answer.title}`, d.answer.body, "");
     out.push(...d.answer.facts.map(([k, v]) => `- ${k}: ${v}`), "");
     out.push(`## ${d.categories.title}`);
-    for (const s of categorySlugs) {
-      const c = d.categories.items[s];
-      out.push(`### ${c.name} (${url(l, `/products/${s}`)})`, c.intro, `${d.product.examples}: ${c.examples.join(", ")}`);
+    for (const c of cats) {
+      out.push(`### ${c.name} (${url(l, `/products/${c.slug}`)})`, c.intro, `${d.product.examples}: ${c.examples.join(", ")}`);
       out.push(`${d.product.uses}: ${c.uses.join("; ")}`);
       for (const f of c.faq) out.push(`Q: ${f.q}`, `A: ${f.a}`);
       out.push("");
@@ -54,6 +57,8 @@ export async function buildLlmsFull(): Promise<string> {
     out.push(`## ${d.faq.title}`);
     for (const f of d.faq.items) out.push(`Q: ${f.q}`, `A: ${f.a}`);
     out.push("");
+    const cmsPages = await listPublishedPages(l);
+    for (const p of cmsPages) out.push(`## ${p.title} (${url(l, `/${p.slug}`)})`, p.body, "");
     const posts = await listPublished(l);
     if (posts.length) {
       out.push(`## ${d.insights.title}`);

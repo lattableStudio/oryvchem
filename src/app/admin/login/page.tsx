@@ -3,7 +3,7 @@ import { adminEnabled, isAdmin } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage() {
-  if (await isAdmin()) redirect("/admin");
+  if (await isAdmin()) redirect("/admin/dashboard");
   return (
     <div className="login">
       <h1>Oryvchem admin</h1>

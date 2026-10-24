@@ -1,11 +1,13 @@
 import type { Locale } from "@/i18n/config";
-import { getStaticDict, type Dict } from "@/i18n/dictionaries";
-import { categorySlugs, type CategorySlug, SITE } from "./site";
+import type { Dict } from "@/i18n/dictionaries";
+import type { Category } from "./categories";
+import { SITE } from "./site";
+import { socialLinks, type SiteSettings } from "./settings";
 import { url } from "./seo";
 
 const orgId = `${SITE.url}/#organization`;
 
-export function organizationSchema(locale: Locale, d: Dict) {
+export function organizationSchema(locale: Locale, d: Dict, cats: Category[], site: SiteSettings) {
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -18,14 +20,15 @@ export function organizationSchema(locale: Locale, d: Dict) {
         logo: `${SITE.url}/icon.svg`,
         image: `${SITE.url}/og`,
         description: d.answer.body,
-        email: SITE.email,
-        telephone: SITE.phone,
+        email: site.email,
+        telephone: site.phone,
+        ...(socialLinks(site).length ? { sameAs: socialLinks(site).map((s) => s.url) } : {}),
         address: {
           "@type": "PostalAddress",
-          streetAddress: SITE.address.street,
-          addressLocality: SITE.address.locality,
-          addressRegion: SITE.address.region,
-          addressCountry: SITE.address.country,
+          streetAddress: site.address.street,
+          addressLocality: site.address.locality,
+          addressRegion: site.address.region,
+          addressCountry: site.address.country,
         },
         geo: { "@type": "GeoCoordinates", latitude: SITE.geo.lat, longitude: SITE.geo.lng },
         areaServed: "Worldwide",
@@ -33,17 +36,17 @@ export function organizationSchema(locale: Locale, d: Dict) {
         contactPoint: [
           {
             "@type": "ContactPoint",
-            telephone: SITE.phone,
-            email: SITE.email,
+            telephone: site.phone,
+            email: site.email,
             contactType: "sales",
             areaServed: ["SA", "AE", "QA", "KW", "OM", "EG", "MA", "DZ", "TN", "FR", "BE", "SN", "CI", "Worldwide"],
             availableLanguage: ["English", "Arabic", "French", "Chinese"],
           },
         ],
-        knowsAbout: categorySlugs.map((s) => getStaticDict("en").categories.items[s].name),
-        makesOffer: categorySlugs.map((s) => ({
+        knowsAbout: cats.map((c) => c.name),
+        makesOffer: cats.map((c) => ({
           "@type": "Offer",
-          itemOffered: { "@type": "Service", name: d.categories.items[s].name, url: url(locale, `/products/${s}`) },
+          itemOffered: { "@type": "Service", name: c.name, url: url(locale, `/products/${c.slug}`) },
         })),
       },
       {
@@ -58,7 +61,7 @@ export function organizationSchema(locale: Locale, d: Dict) {
   };
 }
 
-export function homeSchema(locale: Locale, d: Dict) {
+export function homeSchema(locale: Locale, d: Dict, cats: Category[]) {
   return [
     {
       "@context": "https://schema.org",
@@ -76,11 +79,11 @@ export function homeSchema(locale: Locale, d: Dict) {
       "@context": "https://schema.org",
       "@type": "ItemList",
       name: d.categories.title,
-      itemListElement: categorySlugs.map((s, i) => ({
+      itemListElement: cats.map((c, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        name: d.categories.items[s].name,
-        url: url(locale, `/products/${s}`),
+        name: c.name,
+        url: url(locale, `/products/${c.slug}`),
       })),
     },
     faqSchema(d.faq.items),
@@ -105,8 +108,8 @@ export function faqSchema(items: { q: string; a: string }[]) {
   };
 }
 
-export function productPageSchema(locale: Locale, slug: CategorySlug, d: Dict) {
-  const c = d.categories.items[slug];
+export function productPageSchema(locale: Locale, c: Category, d: Dict) {
+  const slug = c.slug;
   return [
     {
       "@context": "https://schema.org",
@@ -135,7 +138,7 @@ export function productPageSchema(locale: Locale, slug: CategorySlug, d: Dict) {
 
 export function articleSchema(
   locale: Locale,
-  p: { slug: string; title: string; excerpt: string; published_at: Date | string | null; updated_at: Date | string },
+  p: { slug: string; title: string; excerpt: string; published_at: Date | string | null; updated_at: Date | string; cover_media?: number | string | null },
 ) {
   const pageUrl = url(locale, `/insights/${p.slug}`);
   return [
@@ -148,7 +151,7 @@ export function articleSchema(
       inLanguage: locale,
       url: pageUrl,
       mainEntityOfPage: pageUrl,
-      image: `${SITE.url}/og`,
+      image: p.cover_media ? `${SITE.url}/media/${p.cover_media}` : `${SITE.url}/og`,
       datePublished: new Date(p.published_at ?? p.updated_at).toISOString(),
       dateModified: new Date(p.updated_at).toISOString(),
       author: { "@id": orgId },

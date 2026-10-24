@@ -8,6 +8,7 @@ import { pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/lib/jsonld";
 import { articleSchema } from "@/lib/schema";
 import { Markdown } from "@/lib/markdown";
+import { SITE } from "@/lib/site";
 
 export const revalidate = 300;
 export const dynamicParams = true; // new articles appear without a rebuild
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
     description: post.excerpt,
     selfOnly: true,
     type: "article",
+    image: post.cover_media ? `${SITE.url}/media/${post.cover_media}` : undefined,
   });
 }
 
@@ -78,6 +80,10 @@ export default async function Article({ params }: P) {
         </section>
         <section>
           <div className="wrap narrow prose">
+            {post.cover_media && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/media/${post.cover_media}`} alt={post.title} style={{ width: "100%", height: "auto", borderRadius: 14, marginBottom: 24 }} />
+            )}
             <Markdown source={post.body} />
           </div>
         </section>
