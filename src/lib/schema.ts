@@ -123,21 +123,56 @@ export function productPageSchema(locale: Locale, c: Category, d: Dict) {
       inLanguage: locale,
       url: url(locale, `/products/${slug}`),
     },
+    breadcrumbSchema([
+      [d.product.home, url(locale)],
+      [d.product.products, `${url(locale)}#categories`],
+      [c.name, url(locale, `/products/${slug}`)],
+    ]),
+    faqSchema(c.faq),
+  ];
+}
+
+/** BreadcrumbList from [name, absolute URL] pairs, matching the visible breadcrumb. */
+export function breadcrumbSchema(items: [name: string, item: string][]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(([name, item], i) => ({ "@type": "ListItem", position: i + 1, name, item })),
+  };
+}
+
+export function insightsIndexSchema(locale: Locale, d: Dict, posts: { slug: string; title: string }[]) {
+  const pageUrl = url(locale, "/insights");
+  return [
     {
       "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: d.product.home, item: url(locale) },
-        { "@type": "ListItem", position: 2, name: d.product.products, item: `${url(locale)}#categories` },
-        { "@type": "ListItem", position: 3, name: c.name, item: url(locale, `/products/${slug}`) },
-      ],
+      "@type": "CollectionPage",
+      "@id": `${pageUrl}#webpage`,
+      url: pageUrl,
+      name: d.insights.title,
+      description: d.insights.intro,
+      inLanguage: locale,
+      isPartOf: { "@id": `${SITE.url}/#website` },
+      publisher: { "@id": orgId },
+      ...(posts.length
+        ? {
+            mainEntity: {
+              "@type": "ItemList",
+              itemListElement: posts.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: url(locale, `/insights/${p.slug}`) })),
+            },
+          }
+        : {}),
     },
-    faqSchema(c.faq),
+    breadcrumbSchema([
+      [d.product.home, url(locale)],
+      [d.nav.insights, pageUrl],
+    ]),
   ];
 }
 
 export function articleSchema(
   locale: Locale,
+  d: Dict,
   p: { slug: string; title: string; excerpt: string; published_at: Date | string | null; updated_at: Date | string; cover_media?: number | string | null },
 ) {
   const pageUrl = url(locale, `/insights/${p.slug}`);
@@ -157,5 +192,10 @@ export function articleSchema(
       author: { "@id": orgId },
       publisher: { "@id": orgId },
     },
+    breadcrumbSchema([
+      [d.product.home, url(locale)],
+      [d.nav.insights, url(locale, "/insights")],
+      [p.title, pageUrl],
+    ]),
   ];
 }

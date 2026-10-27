@@ -11,9 +11,9 @@ const cat = (
 
 export const fr: Dict = {
   meta: {
-    title: "Oryvchem | Sourcing et négoce de produits chimiques industriels depuis Foshan, Chine",
+    title: "Oryvchem | Sourcing de produits chimiques depuis Foshan, Chine",
     description:
-      "Oryvchem achète des produits chimiques industriels et des matières premières directement auprès de fabricants vérifiés à Foshan, Guangdong : céramique, traitement de l'eau, tensioactifs, plastiques, peintures, textile et tout produit sur demande. COA et FDS pour chaque lot. Livraison vers le Maghreb, l'Afrique francophone, l'Europe et le monde.",
+      "Produits chimiques industriels achetés en direct auprès d'usines vérifiées de Foshan : céramique, eau, tensioactifs, plastiques, peintures. COA et FDS par lot.",
     keywords: [
       "sourcing produits chimiques Chine",
       "fournisseur produits chimiques industriels Foshan",

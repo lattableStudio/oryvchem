@@ -5,7 +5,7 @@ import { listPublishedPages } from "@/lib/pages";
 import { getCategories } from "./categories";
 import { SITE } from "./site";
 import { getSite } from "./settings";
-import { url } from "./seo";
+import { plainText, snippet, url } from "./seo";
 
 /** /llms.txt — concise map of the site for LLM crawlers (llmstxt.org format). */
 export async function buildLlmsTxt(): Promise<string> {
@@ -30,7 +30,7 @@ export async function buildLlmsTxt(): Promise<string> {
       lines.push(`- [${c.name}](${url(l, `/products/${c.slug}`)}): ${c.short}`);
     }
     for (const p of await listPublished(l)) lines.push(`- [${p.title}](${url(l, `/insights/${p.slug}`)}): ${p.excerpt}`);
-    for (const p of await listPublishedPages(l)) lines.push(`- [${p.title}](${url(l, `/${p.slug}`)}): ${p.seo_description || p.body.replace(/[#*`>_]|\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim().slice(0, 155)}`);
+    for (const p of await listPublishedPages(l)) lines.push(`- [${p.title}](${url(l, `/${p.slug}`)}): ${p.seo_description || snippet(plainText(p.body))}`);
     lines.push("");
   }
   lines.push("## Full text", `- [llms-full.txt](${SITE.url}/llms-full.txt): all pages, FAQs and articles in plain text`, "");

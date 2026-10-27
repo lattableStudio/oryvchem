@@ -11,7 +11,7 @@ export const en = {
   meta: {
     title: "Oryvchem | Industrial Chemical Sourcing & Trading from Foshan, China",
     description:
-      "Oryvchem sources industrial chemicals and raw materials directly from verified manufacturers in Foshan, Guangdong — ceramics, water treatment, surfactants, plastics, paints, textiles and any product on request. COA and SDS on every batch. Shipping to the Middle East, North Africa, Europe and worldwide.",
+      "Industrial chemicals sourced direct from verified Foshan, China manufacturers: ceramics, water treatment, surfactants, plastics, coatings. COA + SDS per batch.",
     keywords: [
       "chemical sourcing China",
       "industrial chemicals supplier Foshan",

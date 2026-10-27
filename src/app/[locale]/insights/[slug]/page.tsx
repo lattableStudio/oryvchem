@@ -57,7 +57,7 @@ export default async function Article({ params }: P) {
 
   return (
     <>
-      {articleSchema(locale, post).map((s, i) => (
+      {articleSchema(locale, d, post).map((s, i) => (
         <JsonLd key={i} data={s} />
       ))}
       <article>

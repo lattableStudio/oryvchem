@@ -5,6 +5,8 @@ import { isLocale } from "@/i18n/config";
 import { getDict } from "@/lib/content";
 import { listPublished } from "@/lib/posts";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/lib/jsonld";
+import { insightsIndexSchema } from "@/lib/schema";
 
 export const revalidate = 300;
 
@@ -26,6 +28,9 @@ export default async function Insights({ params }: P) {
 
   return (
     <>
+      {insightsIndexSchema(locale, d, posts).map((s, i) => (
+        <JsonLd key={i} data={s} />
+      ))}
       <section className="page-hero">
         <div className="wrap">
           <nav className="crumbs" aria-label="Breadcrumb">

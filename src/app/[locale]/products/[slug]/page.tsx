@@ -6,7 +6,7 @@ import { getDict } from "@/lib/content";
 import { getCategories, getCategory, getCategorySlugs } from "@/lib/categories";
 import { SITE } from "@/lib/site";
 import { getSite } from "@/lib/settings";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, snippet } from "@/lib/seo";
 import { JsonLd } from "@/lib/jsonld";
 import { productPageSchema } from "@/lib/schema";
 import { InquiryForm } from "@/components/InquiryForm";
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
     locale,
     path: `/products/${slug}`,
     title: `${c.name} — Oryvchem`,
-    description: `${c.intro.slice(0, 155).replace(/\s+\S*$/, "")}…`,
+    description: snippet(c.intro),
     keywords: [...c.examples, c.name],
   });
 }

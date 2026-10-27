@@ -1,8 +1,15 @@
 import type { NextConfig } from "next";
 
+// Canonical host, e.g. www.oryvchem.com. The bare domain should 308 to it (also set in Vercel Domains; this is the in-app fallback).
+const siteHost = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.oryvchem.com").host;
+
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  async redirects() {
+    if (!siteHost.startsWith("www.")) return [];
+    return [{ source: "/:path*", has: [{ type: "host", value: siteHost.slice(4) }], destination: `https://${siteHost}/:path*`, permanent: true }];
+  },
   async headers() {
     return [
       {
