@@ -24,7 +24,7 @@ export async function GET() {
           <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>
             Industrial chemicals, sourced where they&apos;re made.
           </div>
-          <div style={{ fontSize: 32, color: "#A9B7B3" }}>Foshan · Guangdong · China — COA + SDS on every batch</div>
+          <div style={{ fontSize: 32, color: "#A9B7B3" }}>Foshan · Guangdong · China — Chemical sourcing agent</div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, color: "#3E8E7E" }}>
           <span>EN · AR · FR</span>
