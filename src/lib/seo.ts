@@ -7,6 +7,17 @@ export function url(locale: Locale, path = ""): string {
   return `${SITE.url}/${locale}${path ? encodeURI(path.startsWith("/") ? path : `/${path}`) : ""}`;
 }
 
+/** Meta-description excerpt: cut on a word boundary, with "…" only when the text was actually shortened. */
+export function snippet(text: string, max = 155): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  return t.length <= max ? t : `${t.slice(0, max).replace(/\s+\S*$/, "")}…`;
+}
+
+/** Markdown to plain text (formatting marks and link targets removed). */
+export function plainText(md: string): string {
+  return md.replace(/[#*`>_]|\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim();
+}
+
 export function alternates(locale: Locale, path = ""): Metadata["alternates"] {
   const languages: Record<string, string> = {};
   for (const l of locales) languages[localeMeta[l].hreflang] = url(l, path);

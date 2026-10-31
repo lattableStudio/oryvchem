@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 import { defaultLocale, isLocale, localeMeta, locales } from "@/i18n/config";
 import { getDict } from "@/lib/content";
 import { allPublishedPages, getPublishedPage, RESERVED_SLUGS } from "@/lib/pages";
-import { pageMetadata, url } from "@/lib/seo";
+import { pageMetadata, plainText, snippet, url } from "@/lib/seo";
 import { JsonLd } from "@/lib/jsonld";
+import { breadcrumbSchema } from "@/lib/schema";
 import { Markdown } from "@/lib/markdown";
 import { SITE } from "@/lib/site";
 
@@ -25,8 +26,7 @@ const decode = (s: string) => {
 };
 
 /** First ~155 characters of the body as plain text, for pages without an SEO description. */
-const plain = (md: string) =>
-  md.replace(/[#*`>_]|\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim().slice(0, 155);
+const plain = (md: string) => snippet(plainText(md));
 
 type P = { params: Promise<{ locale: string; slug: string }> };
 
@@ -75,14 +75,10 @@ export default async function CustomPage({ params }: P) {
       dateModified: new Date(page.updated_at).toISOString(),
       isPartOf: { "@id": `${SITE.url}/#website` },
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: d.product.home, item: url(locale) },
-        { "@type": "ListItem", position: 2, name: page.title, item: pageUrl },
-      ],
-    },
+    breadcrumbSchema([
+      [d.product.home, url(locale)],
+      [page.title, pageUrl],
+    ]),
   ];
 
   return (

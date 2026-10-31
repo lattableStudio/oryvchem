@@ -17,9 +17,12 @@ import "../globals.css";
 
 const head = Space_Grotesk({ subsets: ["latin"], variable: "--f-head", display: "swap" });
 const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--f-sans", display: "swap" });
-const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--f-mono", display: "swap" });
+// Not preloaded: mono is only used for small labels, and Arabic would otherwise be preloaded on en/fr pages too
+// (preloads are per layout, not per locale). Both still load via @font-face with display: swap.
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--f-mono", display: "swap", preload: false });
 const arabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
+  preload: false,
   weight: ["400", "500", "600", "700"],
   variable: "--f-ar",
   display: "swap",
